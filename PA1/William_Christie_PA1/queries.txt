@@ -1,0 +1,5 @@
+SELECT first_name, last_name FROM employees WHERE hire_date >= (SELECT DATE_ADD(MAX(hire_date), INTERVAL -30 DAY) FROM employees) INTO OUTFILE '/var/lib/mysql-files/new_hires.csv' FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
+CREATE VIEW high_salaries AS SELECT * FROM salaries WHERE salary > 120000;
+
+CREATE VIEW high_salary_names AS SELECT DISTINCT first_name, last_name FROM  employees INNER JOIN high_salaries ON employees.emp_no=high_salaries.emp_no ORDER BY last_name ASC;
