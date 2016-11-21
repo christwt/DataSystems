@@ -1,0 +1,6 @@
+SELECT DISTINCT dept_no, dept_name FROM base ORDER BY dept_no INTO OUTFILE '/var/lib/mysql-files/departments.csv' FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
+SELECT DISTINCT emp_no, dept_no, dept_mgr_from_date, dept_mgr_to_date FROM base ORDER BY dept_no INTO OUTFILE '/var/lib/mysql-files/dept_mgr.csv' FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
+SELECT emp_no, title, title_from_date, title_to_date FROM base ORDER BY emp_no INTO OUTFILE '/var/lib/mysql-files/titles.csv' FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
