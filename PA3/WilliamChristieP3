@@ -1,0 +1,182 @@
+diff --git a/bpt.c b/bpt.c
+index 9449525..a6c117a 100644
+--- a/bpt.c
++++ b/bpt.c
+@@ -36,13 +36,34 @@
+  *  Author:  Amittai Aviram 
+  *    http://www.amittai.com
+  *    amittai.aviram@gmail.edu or afa13@columbia.edu
++ *  Adapted by:  William Christie
++ *    william.christie@colorado.edu
+  *  Original Date:  26 June 2010
+- *  Last modified: 17 June 2016
++ *  Last modified: 21 November 2016
++ *
+  *
+  *  This implementation demonstrates the B+ tree data structure
+  *  for educational purposes, includin insertion, deletion, search, and display
+  *  of the search path, the leaves, or the whole tree.
+- *  
++ *
++ *  Adapted by William Christie such that keys are ordered in descending order as
++ *  opposed to ascending order in original implementation.
++ *
++ *  Preserves all original usage and B+ tree semantics.
++ *
++ *
++ *  PROGRESS: 
++ *      --
++ *      1. (i) - Insertion works in all cases. Confirmed by verbose print.
++ *      2. (f) - Find value under key works in all cases. Confirmed with tree orders 3,4,5.
++ *      3. (p) - Find path works in all cases. Confirmed with tree orders 3,4,5.
++ *      4. (r) - Print key/value in range works. Confirmed with tree orders 3,4,5.
++ *      5. (d) - Delect appears to work remains in b+ tree form with desc keys.
++ *      6. (x) - Delete entire tree works fine.
++ *      7. (t) - Print B+ tree works in both verbose and normal form.
++ *      8. (l) - Print all leaves works in verbose and normal form.
++ *      -- 
++ *
+  *  Must be compiled with a C99-compliant C compiler such as the latest GCC.
+  *
+  *  Usage:  bpt [order]
+@@ -482,7 +503,11 @@ void find_and_print(node * root, int key, bool verbose) {
+ void find_and_print_range( node * root, int key_start, int key_end,
+ 		bool verbose ) {
+ 	int i;
+-	int array_size = key_end - key_start + 1;
++    /* CHANGE 7 update determining array size. key_start is now the 
++     * higher of the two range values.
++     */
++    int array_size = key_start - key_end + 1;
++	//int array_size = key_end - key_start + 1;
+ 	int returned_keys[array_size];
+ 	void * returned_pointers[array_size];
+ 	int num_found = find_range( root, key_start, key_end, verbose,
+@@ -509,12 +534,17 @@ int find_range( node * root, int key_start, int key_end, bool verbose,
+ 		int returned_keys[], void * returned_pointers[]) {
+ 	int i, num_found;
+ 	num_found = 0;
++    /* CHANGE 5 find a way to alter range search now that keys are stored in descending order.
++     * a - increment in found leaf node until we are at the correct start index (inclusive).
++     * b - increment num_found until reach the lowest index within range (inclusive).
++     */
+ 	node * n = find_leaf( root, key_start, verbose );
+ 	if (n == NULL) return 0;
+-	for (i = 0; i < n->num_keys && n->keys[i] < key_start; i++) ;
++    
++	for (i = 0; i < n->num_keys &&/*CHANGE 5.a*/ n->keys[i] > key_start/*CHANGE 5.a*/; i++) ;
+ 	if (i == n->num_keys) return 0;
+ 	while (n != NULL) {
+-		for ( ; i < n->num_keys && n->keys[i] <= key_end; i++) {
++		for ( ; i < n->num_keys &&/*CHANGE 5.b*/ n->keys[i] >= key_end/*CHANGE 5.b*/; i++) {
+ 			returned_keys[num_found] = n->keys[i];
+ 			returned_pointers[num_found] = n->pointers[i];
+ 			num_found++;
+@@ -527,7 +557,7 @@ int find_range( node * root, int key_start, int key_end, bool verbose,
+ 
+ 
+ /* Traces the path from the root to a leaf, searching
+- * by key.  Displays information about the path
++ * by key. Displays information about the path
+  * if the verbose flag is set.
+  * Returns the leaf containing the given key.
+  */
+@@ -547,8 +577,12 @@ node * find_leaf( node * root, int key, bool verbose ) {
+ 			printf("%d] ", c->keys[i]);
+ 		}
+ 		i = 0;
++        
++        /* CHANGE 4: Changed tree search traversal to get to the proper leaf node.
++         * for insertion now that keys are stored in descending order.
++         */
+ 		while (i < c->num_keys) {
+-			if (key >= c->keys[i]) i++;
++			if (/*CHANGE 4*/key <= c->keys[i])/*CHANGE 4*/i++;
+ 			else break;
+ 		}
+ 		if (verbose)
+@@ -666,15 +700,22 @@ int get_left_index(node * parent, node * left) {
+ node * insert_into_leaf( node * leaf, int key, record * pointer ) {
+ 
+ 	int i, insertion_point;
+-
++    
+ 	insertion_point = 0;
+-	while (insertion_point < leaf->num_keys && leaf->keys[insertion_point] < key)
++    
++    /* CHANGE 1:
++     * Changed insert_into_leaf. Altered while loop so that
++     * insertion point increments while leaf->keys[insertion_point] > key as opposed
++     * to leaf->keys[insertion_point] < key.
++     */
++	while (insertion_point < leaf->num_keys && /*CHANGE 1*/leaf->keys[insertion_point] > key)/*CHANGE 1*/
+ 		insertion_point++;
+ 
+ 	for (i = leaf->num_keys; i > insertion_point; i--) {
+ 		leaf->keys[i] = leaf->keys[i - 1];
+ 		leaf->pointers[i] = leaf->pointers[i - 1];
+ 	}
++    
+ 	leaf->keys[insertion_point] = key;
+ 	leaf->pointers[insertion_point] = pointer;
+ 	leaf->num_keys++;
+@@ -709,7 +750,12 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
+ 	}
+ 
+ 	insertion_index = 0;
+-	while (insertion_index < order - 1 && leaf->keys[insertion_index] < key)
++    
++    /* CHANGE 2: similar update to CHANGE 1,
++     * update temp_keys/temp_pointers to insert new key
++     * at correct spot prior to split
++     */
++	while (insertion_index < order - 1 && /*CHANGE 2*/leaf->keys[insertion_index] > key)/*CHANGE 2*/
+ 		insertion_index++;
+ 
+ 	for (i = 0, j = 0; i < leaf->num_keys; i++, j++) {
+@@ -724,14 +770,20 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
+ 	leaf->num_keys = 0;
+ 
+ 	split = cut(order - 1);
+-
+-	for (i = 0; i < split; i++) {
++    
++    /* CHANGE 3: change split allocation of keys
++     * left > parent, right <= parent which is the opposite of
++     * previous implementation.
++     * a - keys to left leaf = all keys <= new key.
++     * b - keys to right leaf = all keys > new key
++     */
++	for (i = 0; /*CHANGE 3.a*/i < split/*CHANGE 3.a*/; i++) {
+ 		leaf->pointers[i] = temp_pointers[i];
+ 		leaf->keys[i] = temp_keys[i];
+ 		leaf->num_keys++;
+ 	}
+ 
+-	for (i = split, j = 0; i < order; i++, j++) {
++	for (/*CHANGE 3.b*/i = split/*CHANGE 3.b*/, j = 0; i < order; i++, j++) {
+ 		new_leaf->pointers[j] = temp_pointers[i];
+ 		new_leaf->keys[j] = temp_keys[i];
+ 		new_leaf->num_keys++;
+@@ -750,7 +802,7 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
+ 
+ 	new_leaf->parent = leaf->parent;
+ 	new_key = new_leaf->keys[0];
+-
++    
+ 	return insert_into_parent(root, leaf, new_key, new_leaf);
+ }
+ 
+@@ -1433,7 +1485,11 @@ int main( int argc, char ** argv ) {
+ 			break;
+ 		case 'r':
+ 			scanf("%d %d", &input, &range2);
+-			if (input > range2) {
++            /* CHANGE 6: now that order is reversed need to pass higher 
++             * indice for range search. Will search to the right of range
++             * value.
++             */
++			if (/*CHANGE 6*/input < range2/*CHANGE 6*/) {
+ 				int tmp = range2;
+ 				range2 = input;
+ 				input = tmp;
