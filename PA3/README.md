@@ -8,5 +8,5 @@ Goal: Modify an exisiting B+ tree implementation such that all keys are stored i
 
 2. **MAKEFILE** - simple GNU MAKEFILE to build and run code. 
 
-3. WilliamChristiePA3 - git diff file showing differences between original and my implementation.
+3. **WilliamChristiePA3** - git diff file showing differences between original and my implementation.
 
